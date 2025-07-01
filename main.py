@@ -50,7 +50,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
         )
 
 
-def process_pdf_ocrmypdf(file, languages='pan+eng'):
+def process_pdf_ocrmypdf(file, languages='pan+eng+hin'):
     text = ""
     try:
         file.file.seek(0)
@@ -84,7 +84,7 @@ def process_pdf_ocrmypdf(file, languages='pan+eng'):
                     pass
     return text
 
-def process_pdf_tesseract(file, languages='pan+eng'):
+def process_pdf_tesseract(file, languages='pan+eng+hin'):
     text = ""
     file.file.seek(0)
     pdf_bytes = file.file.read()
@@ -112,7 +112,7 @@ def process_docx(file):
     doc = Document(file.file)
     return " ".join(para.text for para in doc.paragraphs if para.text.strip())
 
-def process_image_ocrmypdf(file, languages='pan+eng'):
+def process_image_ocrmypdf(file, languages='pan+eng+hin'):
     file.file.seek(0)
     with tempfile.NamedTemporaryFile(suffix=os.path.splitext(file.filename)[1], delete=False) as temp_img:
         temp_img.write(file.file.read())
@@ -145,7 +145,7 @@ def process_image_ocrmypdf(file, languages='pan+eng'):
             except Exception:
                 pass
 
-def process_image_tesseract(file, languages='pan+eng'):
+def process_image_tesseract(file, languages='pan+eng+hin'):
     file.file.seek(0)
     img = Image.open(io.BytesIO(file.file.read()))
     ocr_text = pytesseract.image_to_string(
@@ -155,7 +155,7 @@ def process_image_tesseract(file, languages='pan+eng'):
     )
     return ocr_text
 
-def get_file_text_ocrmypdf(files: List[UploadFile], languages='pan+eng'):
+def get_file_text_ocrmypdf(files: List[UploadFile], languages='pan+eng+hin'):
     text = []
     for file in files:
         ext = os.path.splitext(file.filename)[1].lower()
@@ -172,7 +172,7 @@ def get_file_text_ocrmypdf(files: List[UploadFile], languages='pan+eng'):
             raise HTTPException(status_code=400, detail=f"Error processing {file.filename}: {str(e)}")
     return " ".join(text)
 
-def get_file_text_tesseract(files: List[UploadFile], languages='pan+eng'):
+def get_file_text_tesseract(files: List[UploadFile], languages='pan+eng+hin'):
     text = []
     for file in files:
         ext = os.path.splitext(file.filename)[1].lower()
@@ -197,7 +197,7 @@ async def get_token():
 @app.post("/ocrmypdf")
 async def ocr_endpoint(
     files: List[UploadFile] = File(...),
-    languages: str = 'pan+eng',
+    languages: str = 'pan+eng+hin',
     token_payload: dict = Depends(verify_token)
 ):
     extracted_text = get_file_text_ocrmypdf(files, languages)
@@ -207,7 +207,7 @@ async def ocr_endpoint(
 @app.post("/ocr-tesseract")
 async def ocr_tesseract_only(
     files: List[UploadFile] = File(...),
-    languages: str = 'pan+eng',
+    languages: str = 'pan+eng+hin',
     token_payload: dict = Depends(verify_token)
 ):
     extracted_text = get_file_text_tesseract(files, languages)
