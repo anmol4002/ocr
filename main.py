@@ -1,317 +1,62 @@
-# from fastapi import FastAPI, UploadFile, File
-# from fastapi.responses import JSONResponse
-# import pdfplumber
-# import ocrmypdf
-# import tempfile
-# import os
-# from typing import List
-# from docx import Document
-# from PIL import Image
-
-# app = FastAPI()
-
-# def get_file_text(files: List[UploadFile], languages='pan+eng'):
-#     text = ""
-    
-#     for file in files:
-#         file_name = file.filename
-#         file_ext = os.path.splitext(file_name)[1].lower()
-        
-#         try:
-#             if file_ext == '.pdf':
-#                 try:
-#                     with pdfplumber.open(file.file) as pdf_reader:
-#                         for page in pdf_reader.pages:
-#                             page_text = page.extract_text()
-#                             if page_text:
-#                                 text += page_text + "\n"
-#                             else:
-#                                 raise Exception("No text found - need OCR")
-                
-#                 except Exception:
-#                     file.file.seek(0)
-#                     temp_dir = tempfile.gettempdir()
-#                     temp_input_path = os.path.join(temp_dir, f"input_{file_name}")
-#                     temp_output_path = os.path.join(temp_dir, f"output_{file_name}")
-                    
-#                     try:
-#                         with open(temp_input_path, 'wb') as f:
-#                             f.write(file.file.read())
-                        
-#                         ocrmypdf.ocr(
-#                             input_file=temp_input_path,
-#                             output_file=temp_output_path,
-#                             language=languages,
-#                             force_ocr=True,
-#                             progress_bar=False,
-#                             optimize=False
-#                         )
-                        
-#                         with pdfplumber.open(temp_output_path) as pdf_reader:
-#                             for page in pdf_reader.pages:
-#                                 page_text = page.extract_text()
-#                                 if page_text:
-#                                     text += page_text + "\n"
-                    
-#                     finally:
-#                         for path in [temp_input_path, temp_output_path]:
-#                             try:
-#                                 if os.path.exists(path):
-#                                     os.remove(path)
-#                             except Exception as e:
-#                                 print(f"Error cleaning up {path}: {e}")
-
-#             elif file_ext == '.docx':
-#                 doc = Document(file.file)
-#                 for paragraph in doc.paragraphs:
-#                     if paragraph.text.strip():
-#                         text += paragraph.text + "\n"
-            
-#             elif file_ext in ['.png', '.jpg', '.jpeg', '.tiff', '.bmp']:
-#                 temp_dir = tempfile.gettempdir()
-#                 temp_image_path = os.path.join(temp_dir, f"image_{file_name}")
-#                 temp_pdf_path = os.path.join(temp_dir, f"pdf_{file_name}.pdf")
-#                 temp_output_path = os.path.join(temp_dir, f"output_{file_name}.pdf")
-                
-#                 try:
-                     
-#                     with open(temp_image_path, 'wb') as f:
-#                         f.write(file.file.read())
-     
-#                     image = Image.open(temp_image_path)
-#                     if image.mode != 'RGB':
-#                         image = image.convert('RGB')
-#                     image.save(temp_pdf_path, 'PDF')
-
-#                     ocrmypdf.ocr(
-#                         input_file=temp_pdf_path,
-#                         output_file=temp_output_path,
-#                         language=languages,
-#                         force_ocr=True,
-#                         progress_bar=False,
-#                         optimize=False
-#                     )
-                    
-#                     with pdfplumber.open(temp_output_path) as pdf_reader:
-#                         for page in pdf_reader.pages:
-#                             page_text = page.extract_text()
-#                             if page_text:
-#                                 text += page_text + "\n"
-                
-#                 finally:
-#                     for path in [temp_image_path, temp_pdf_path, temp_output_path]:
-#                         try:
-#                             if os.path.exists(path):
-#                                 os.remove(path)
-#                         except Exception as e:
-#                             print(f"Error cleaning up {path}: {e}")
-            
-#             else:
-#                 raise Exception(f"Unsupported file type: {file_ext}")
-                
-#         except Exception as e:
-#             print(f"Error processing {file_name}: {e}")
-    
-#     return text
-
-# @app.post("/ocr/")
-# async def ocr_endpoint(files: List[UploadFile] = File(...)):
-#     try:
-#         text = get_file_text(files)
-#         return JSONResponse(content={"text": text})
-#     except Exception as e:
-#         return JSONResponse(status_code=500, content={"error": str(e)})
-
-
-
-
-
-
-
-
-
-# 🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸
-# from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, status
-# from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-# import pdfplumber
-# import ocrmypdf
-# import tempfile
-# import os
-# from typing import List
-# from docx import Document
-# from PIL import Image
-# import jwt
-# from datetime import datetime, timedelta
-# from dotenv import load_dotenv
-
-# app = FastAPI()
-
-# load_dotenv()  
-
-# JWT_KEY = os.getenv("JWT_SECRET_KEY")
-# ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256") 
-
-# security = HTTPBearer()
-
-# def create_token():
-#     expire = datetime.utcnow() + timedelta(hours=1)
-#     payload = {
-#         "property": "Punjab Government",
-#         "exp": expire
-#     }
-#     return jwt.encode(payload, JWT_KEY, algorithm=ALGORITHM)
-
-# def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-#     try:
-#         payload = jwt.decode(credentials.credentials, JWT_KEY, algorithms=[ALGORITHM])
-#         if payload.get("property") != "Punjab Government":
-#             raise HTTPException(
-#                 status_code=status.HTTP_401_UNAUTHORIZED,
-#                 detail="Invalid token - wrong property",
-#                 headers={"WWW-Authenticate": "Bearer"},
-#             )
-#         return payload
-#     except jwt.PyJWTError as e:
-#         raise HTTPException(
-#             status_code=status.HTTP_401_UNAUTHORIZED,
-#             detail=f"Could not validate credentials: {str(e)}",
-#             headers={"WWW-Authenticate": "Bearer"},
-#         )
-
-
-# def process_pdf(file, languages='pan+eng'):
-#     text = ""
-#     try:
-#         with pdfplumber.open(file.file) as pdf:
-#             text = " ".join(page.extract_text() or "" for page in pdf.pages)
-#         if not text.strip():
-#             raise Exception("No text found - need OCR")
-#     except Exception:
-#         file.file.seek(0)
-#         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_input:
-#             temp_input.write(file.file.read())
-#             temp_input_path = temp_input.name
-        
-#         temp_output_path = temp_input_path + "_ocr.pdf"
-#         try:
-#             ocrmypdf.ocr(
-#                 input_file=temp_input_path,
-#                 output_file=temp_output_path,
-#                 language=languages,
-#                 force_ocr=True,
-#                 progress_bar=False
-#             )
-#             with pdfplumber.open(temp_output_path) as pdf:
-#                 text = " ".join(page.extract_text() or "" for page in pdf.pages)
-#         finally:
-#             for path in [temp_input_path, temp_output_path]:
-#                 try:
-#                     if os.path.exists(path):
-#                         os.remove(path)
-#                 except Exception:
-#                     pass
-#     return text
-
-# def process_docx(file):
-#     doc = Document(file.file)
-#     return " ".join(para.text for para in doc.paragraphs if para.text.strip())
-
-# def process_image(file, languages='pan+eng'):
-#     with tempfile.NamedTemporaryFile(suffix=os.path.splitext(file.filename)[1], delete=False) as temp_img:
-#         temp_img.write(file.file.read())
-#         temp_img_path = temp_img.name
-    
-#     temp_pdf_path = temp_img_path + ".pdf"
-#     temp_output_path = temp_img_path + "_ocr.pdf"
-    
-#     try:
-#         image = Image.open(temp_img_path)
-#         if image.mode != 'RGB':
-#             image = image.convert('RGB')
-#         image.save(temp_pdf_path, 'PDF')
-
-#         ocrmypdf.ocr(
-#             input_file=temp_pdf_path,
-#             output_file=temp_output_path,
-#             language=languages,
-#             force_ocr=True,
-#             progress_bar=False
-#         )
-        
-#         with pdfplumber.open(temp_output_path) as pdf:
-#             return " ".join(page.extract_text() or "" for page in pdf.pages)
-#     finally:
-#         for path in [temp_img_path, temp_pdf_path, temp_output_path]:
-#             try:
-#                 if os.path.exists(path):
-#                     os.remove(path)
-#             except Exception:
-#                 pass
-
-# def get_file_text(files: List[UploadFile], languages='pan+eng'):
-#     text = []
-#     for file in files:
-#         ext = os.path.splitext(file.filename)[1].lower()
-#         try:
-#             if ext == '.pdf':
-#                 text.append(process_pdf(file, languages))
-#             elif ext == '.docx':
-#                 text.append(process_docx(file))
-#             elif ext in ['.png', '.jpg', '.jpeg', '.tiff', '.bmp']:
-#                 text.append(process_image(file, languages))
-#             else:
-#                 raise HTTPException(status_code=400, detail=f"Unsupported file type: {ext}")
-#         except Exception as e:
-#             raise HTTPException(status_code=400, detail=f"Error processing {file.filename}: {str(e)}")
-#     return " ".join(text)
-
-# @app.get("/token")
-# async def get_token():
-#     token = create_token()
-#     return {"token": token}
-
-# @app.post("/ocr")
-# async def ocr_endpoint(
-#     files: List[UploadFile] = File(...),
-#     token_payload: dict = Depends(verify_token)
-# ):
-#     extracted_text = get_file_text(files)
-#     cleaned_text = ' '.join(extracted_text.replace('\n', ' ').split())
-#     return cleaned_text
-# 🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸
-
-
-
-
-
-
-
-
 from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel
 import pdfplumber
 import ocrmypdf
 import tempfile
 import os
-from typing import List
+import re 
+from typing import List, Optional, Dict, Tuple
 from docx import Document
 from PIL import Image
 import jwt
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-import fitz  # PyMuPDF
+import fitz  
 import pytesseract
 import io
-
+from langdetect import detect, DetectorFactory, LangDetectException
+import unicodedata
+import time
+import gc
 
 app = FastAPI()
 
-load_dotenv()  
+load_dotenv()
 
 JWT_KEY = os.getenv("JWT_SECRET_KEY")
-ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256") 
+ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+
+DetectorFactory.seed = 0
 
 security = HTTPBearer()
+
+SUPPORTED_LANG_MAP = {
+    "en": "eng",
+    "hi": "hin", 
+    "pa": "pan"
+}
+
+UNICODE_RANGES = {
+    'devanagari': (0x0900, 0x097F),
+    'gurmukhi': (0x0A00, 0x0A7F),
+    'latin': (0x0041, 0x007A),
+}
+
+class PageProcessingInfo(BaseModel):
+    page_number: int
+    detected_languages: List[str]
+    language_scores: Dict[str, float]
+    ocr_method: str
+    text_length: int
+
+class OCRResponse(BaseModel):
+    extracted_text: str
+    detected_languages: List[str]
+    language_used_for_ocr: str
+    confidence_score: float
+    page_processing_info: Optional[List[PageProcessingInfo]] = None
+    total_pages: Optional[int] = None
 
 def create_token():
     expire = datetime.utcnow() + timedelta(hours=1)
@@ -338,167 +83,392 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+def preprocess_text(text: str) -> str:
+    if not text:
+        return ""
+    
+    text = re.sub(r'\s+', ' ', text.strip())
+    text = unicodedata.normalize('NFC', text)
+    return text
 
-def process_pdf_ocrmypdf(file, languages='pan+eng'):
-    text = ""
+def analyze_script_distribution(text: str) -> Dict[str, float]:
+    if not text:
+        return {'latin': 0, 'devanagari': 0, 'gurmukhi': 0}
+    
+    text = preprocess_text(text)
+    total_chars = len(re.sub(r'\s+', '', text))
+    
+    if total_chars == 0:
+        return {'latin': 0, 'devanagari': 0, 'gurmukhi': 0}
+    
+    script_counts = {'latin': 0, 'devanagari': 0, 'gurmukhi': 0}
+    
+    for char in text:
+        char_code = ord(char)
+        
+        if UNICODE_RANGES['devanagari'][0] <= char_code <= UNICODE_RANGES['devanagari'][1]:
+            script_counts['devanagari'] += 1
+        elif UNICODE_RANGES['gurmukhi'][0] <= char_code <= UNICODE_RANGES['gurmukhi'][1]:
+            script_counts['gurmukhi'] += 1
+        elif UNICODE_RANGES['latin'][0] <= char_code <= UNICODE_RANGES['latin'][1]:
+            script_counts['latin'] += 1
+    
+    return {
+        script: (count / total_chars) * 100 
+        for script, count in script_counts.items()
+    }
+
+def detect_languages(text: str) -> tuple[List[str], Dict[str, float]]:
+    if not text or len(text.strip()) < 10:
+        return ["eng"], {"eng": 60.0}
+    
+    text = preprocess_text(text)
+    script_dist = analyze_script_distribution(text)
+    
+    language_scores = {
+        'hin': script_dist['devanagari'],
+        'pan': script_dist['gurmukhi'],
+        'eng': script_dist['latin']
+    }
+    
     try:
-        file.file.seek(0)
-        with pdfplumber.open(file.file) as pdf:
-            text = " ".join(page.extract_text() or "" for page in pdf.pages)
-        if not text.strip():
-            raise Exception("No text found - need OCR")
+        if max(language_scores.values()) < 30:
+            clean_text = re.sub(r'[^\u0900-\u097F\u0A00-\u0A7Fa-zA-Z\s]', ' ', text)
+            clean_text = re.sub(r'\s+', ' ', clean_text).strip()
+            
+            if len(clean_text) > 20:
+                detected_lang = detect(clean_text)
+                if detected_lang in SUPPORTED_LANG_MAP:
+                    lang_code = SUPPORTED_LANG_MAP[detected_lang]
+                    language_scores[lang_code] = max(language_scores[lang_code], 70.0)
+                    
     except Exception:
-        file.file.seek(0)
+        pass
+    
+    detected_languages = []
+    primary_lang = max(language_scores.items(), key=lambda x: x[1])
+    
+    if primary_lang[1] >= 25:
+        detected_languages.append(primary_lang[0])
+    
+    for lang, score in language_scores.items():
+        if lang != primary_lang[0] and score >= 10:
+            detected_languages.append(lang)
+    
+    if not detected_languages:
+        detected_languages = ["eng"]
+        language_scores["eng"] = 50.0
+    
+    return detected_languages, language_scores
+
+def get_ocr_language_string(detected_languages: List[str]) -> str:
+    if not detected_languages:
+        return 'pan+eng+hin'
+    
+    if 'eng' not in detected_languages:
+        detected_languages.append('eng')
+    
+    return '+'.join(detected_languages)
+
+def should_use_ocrmypdf(detected_languages: List[str], language_scores: Dict[str, float]) -> bool:
+    if not detected_languages:
+        return False
+    
+    if len(detected_languages) == 1 and detected_languages[0] == 'eng':
+        return True
+   
+    eng_score = language_scores.get('eng', 0)
+    other_scores = [score for lang, score in language_scores.items() if lang != 'eng']
+    
+    if eng_score > 60 and all(score < 10 for score in other_scores):
+        return True
+    
+    return False
+
+def detect_language_from_image(img: Image.Image) -> Tuple[List[str], Dict[str, float]]:
+    try:
+        width, height = img.size
+        center_crop = img.crop((width//4, height//4, 3*width//4, 3*height//4))
+        
+        sample_text = pytesseract.image_to_string(
+            center_crop, 
+            lang='eng+hin+pan',
+            config='--psm 8 --oem 3'
+        )
+        
+        if sample_text and len(sample_text.strip()) > 5:
+            return detect_languages(sample_text)
+        else:
+            return ["eng", "hin", "pan"], {"eng": 40.0, "hin": 30.0, "pan": 30.0}
+            
+    except Exception:
+        return ["eng"], {"eng": 60.0, "hin": 20.0, "pan": 20.0}
+
+def safe_file_cleanup(file_paths: List[str], max_retries: int = 3, delay: float = 0.1):
+    for file_path in file_paths:
+        if not file_path or not os.path.exists(file_path):
+            continue
+            
+        for attempt in range(max_retries):
+            try:
+                gc.collect()
+                
+                if attempt > 0:
+                    time.sleep(delay * (attempt + 1))
+                
+                os.remove(file_path)
+                break
+                
+            except PermissionError:
+                if attempt == max_retries - 1:
+                    break
+            except Exception:
+                break
+
+def process_with_ocrmypdf_single_page(pdf_document, page_num):
+    temp_input_path = None
+    temp_output_path = None
+    single_page_doc = None
+    
+    try:
+        single_page_doc = fitz.open()
+        single_page_doc.insert_pdf(pdf_document, from_page=page_num, to_page=page_num)
+        
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_input:
-            temp_input.write(file.file.read())
+            single_page_doc.save(temp_input.name)
             temp_input_path = temp_input.name
         
+        single_page_doc.close()
+        single_page_doc = None
+        
         temp_output_path = temp_input_path + "_ocr.pdf"
-        try:
-            ocrmypdf.ocr(
-                input_file=temp_input_path,
-                output_file=temp_output_path,
-                language=languages,
-                force_ocr=True,
-                progress_bar=False
-            )
-            with pdfplumber.open(temp_output_path) as pdf:
-                text = " ".join(page.extract_text() or "" for page in pdf.pages)
-        finally:
-            for path in [temp_input_path, temp_output_path]:
-                try:
-                    if os.path.exists(path):
-                        os.remove(path)
-                except Exception:
-                    pass
-    return text
-
-def process_pdf_tesseract(file, languages='pan+eng'):
-    text = ""
-    file.file.seek(0)
-    pdf_bytes = file.file.read()
-    pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
-    
-    for page_num in range(len(pdf_document)):
-        page = pdf_document.load_page(page_num)
-      
-        pix = page.get_pixmap()
-        img_data = pix.tobytes("png")
-        img = Image.open(io.BytesIO(img_data))
         
-        page_text = pytesseract.image_to_string(
-            img,
-            lang=languages,
-            config='--psm 3'
-        )
-        text += page_text + " "
-    
-    pdf_document.close()
-    return text
-
-def process_docx(file):
-    file.file.seek(0)
-    doc = Document(file.file)
-    return " ".join(para.text for para in doc.paragraphs if para.text.strip())
-
-def process_image_ocrmypdf(file, languages='pan+eng'):
-    file.file.seek(0)
-    with tempfile.NamedTemporaryFile(suffix=os.path.splitext(file.filename)[1], delete=False) as temp_img:
-        temp_img.write(file.file.read())
-        temp_img_path = temp_img.name
-    
-    temp_pdf_path = temp_img_path + ".pdf"
-    temp_output_path = temp_img_path + "_ocr.pdf"
-    
-    try:
-        image = Image.open(temp_img_path)
-        if image.mode != 'RGB':
-            image = image.convert('RGB')
-        image.save(temp_pdf_path, 'PDF')
-
         ocrmypdf.ocr(
-            input_file=temp_pdf_path,
+            input_file=temp_input_path,
             output_file=temp_output_path,
-            language=languages,
+            language='eng',
             force_ocr=True,
-            progress_bar=False
+            progress_bar=False,
+            skip_text=True  
         )
+       
+        with pdfplumber.open(temp_output_path) as ocr_pdf:
+            page_text = ocr_pdf.pages[0].extract_text() if ocr_pdf.pages else ""
         
-        with pdfplumber.open(temp_output_path) as pdf:
-            return " ".join(page.extract_text() or "" for page in pdf.pages)
+        return page_text, "ocrmypdf"
+        
+    except Exception:
+        try:
+            page = pdf_document.load_page(page_num)
+            pix = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5))
+            img_data = pix.tobytes("png")
+            img = Image.open(io.BytesIO(img_data))
+            page_text = pytesseract.image_to_string(img, lang='eng')
+            return page_text, "tesseract"
+        except Exception:
+            return "", "tesseract"
+        
     finally:
-        for path in [temp_img_path, temp_pdf_path, temp_output_path]:
+        if single_page_doc:
+            single_page_doc.close()
+        temp_files = [f for f in [temp_input_path, temp_output_path] if f is not None]
+        if temp_files:
+            safe_file_cleanup(temp_files)
+
+def process_pdf_page_by_page(pdf_bytes: bytes) -> Tuple[List[str], List[PageProcessingInfo], int]:
+    all_text_parts = []
+    all_page_info = []
+    
+    pdf_document = None
+    try:
+        pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
+        total_pages = len(pdf_document)
+        
+        for page_num in range(total_pages):
             try:
-                if os.path.exists(path):
-                    os.remove(path)
+                page = pdf_document.load_page(page_num)
+                pix = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5))
+                img_data = pix.tobytes("png")
+                img = Image.open(io.BytesIO(img_data))
+     
+                page_detected_languages, page_language_scores = detect_language_from_image(img)
+                use_ocrmypdf = should_use_ocrmypdf(page_detected_languages, page_language_scores)
+                
+                if use_ocrmypdf:
+                    page_text, ocr_method = process_with_ocrmypdf_single_page(pdf_document, page_num)
+                else:
+                    lang_string = get_ocr_language_string(page_detected_languages)
+                    page_text = pytesseract.image_to_string(img, lang=lang_string)
+                    ocr_method = "tesseract"
+                    
+                    if page_text.strip():
+                        quick_lang_check, quick_scores = detect_languages(page_text)
+                        should_switch_to_ocrmypdf = should_use_ocrmypdf(quick_lang_check, quick_scores)
+                        
+                        if should_switch_to_ocrmypdf and len(page_text.strip()) > 50:
+                            try:
+                                ocrmypdf_text, _ = process_with_ocrmypdf_single_page(pdf_document, page_num)
+                                if len(ocrmypdf_text.strip()) > len(page_text.strip()) * 0.5:
+                                    page_text = ocrmypdf_text
+                                    ocr_method = "ocrmypdf"
+                            except Exception:
+                                pass
+       
+                if page_text.strip():
+                    final_page_languages, final_page_scores = detect_languages(page_text)
+                else:
+                    final_page_languages, final_page_scores = page_detected_languages, page_language_scores
+          
+                page_info = PageProcessingInfo(
+                    page_number=page_num + 1,
+                    detected_languages=final_page_languages,
+                    language_scores={k: round(v, 1) for k, v in final_page_scores.items()},
+                    ocr_method=ocr_method,
+                    text_length=len(page_text.strip())
+                )
+                all_page_info.append(page_info)
+             
+                if page_text.strip():
+                    all_text_parts.append(page_text.strip())
+                
             except Exception:
-                pass
+                page_info = PageProcessingInfo(
+                    page_number=page_num + 1,
+                    detected_languages=["eng"],
+                    language_scores={"eng": 0.0},
+                    ocr_method="tesseract",
+                    text_length=0
+                )
+                all_page_info.append(page_info)
+        
+        return all_text_parts, all_page_info, total_pages
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process PDF: {str(e)}")
+    
+    finally:
+        if pdf_document:
+            pdf_document.close()
 
-def process_image_tesseract(file, languages='pan+eng'):
-    file.file.seek(0)
-    img = Image.open(io.BytesIO(file.file.read()))
-    ocr_text = pytesseract.image_to_string(
-        img,
-        lang=languages,
-        config='--psm 3'
-    )
-    return ocr_text
-
-def get_file_text_ocrmypdf(files: List[UploadFile], languages='pan+eng'):
-    text = []
-    for file in files:
-        ext = os.path.splitext(file.filename)[1].lower()
-        try:
-            if ext == '.pdf':
-                text.append(process_pdf_ocrmypdf(file, languages))
-            elif ext == '.docx':
-                text.append(process_docx(file))
-            elif ext in ['.png', '.jpg', '.jpeg', '.tiff', '.bmp']:
-                text.append(process_image_ocrmypdf(file, languages))
-            else:
-                raise HTTPException(status_code=400, detail=f"Unsupported file type: {ext}")
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Error processing {file.filename}: {str(e)}")
-    return " ".join(text)
-
-def get_file_text_tesseract(files: List[UploadFile], languages='pan+eng'):
-    text = []
-    for file in files:
-        ext = os.path.splitext(file.filename)[1].lower()
-        try:
-            if ext == '.pdf':
-                text.append(process_pdf_tesseract(file, languages))
-            elif ext == '.docx':
-                text.append(process_docx(file))  # DOCX doesn't need OCR
-            elif ext in ['.png', '.jpg', '.jpeg', '.tiff', '.bmp']:
-                text.append(process_image_tesseract(file, languages))
-            else:
-                raise HTTPException(status_code=400, detail=f"Unsupported file type: {ext}")
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Error processing {file.filename}: {str(e)}")
-    return " ".join(text)
+def process_image_file(img: Image.Image) -> Tuple[str, str, List[str], Dict[str, float]]:
+    img_languages, img_scores = detect_language_from_image(img)
+    
+    if should_use_ocrmypdf(img_languages, img_scores):
+        ocr_text = pytesseract.image_to_string(img, lang='eng')
+        ocr_method = "tesseract"
+    else:
+        lang_str = get_ocr_language_string(img_languages)
+        ocr_text = pytesseract.image_to_string(img, lang=lang_str)
+        ocr_method = "tesseract"
+    
+    return ocr_text, ocr_method, img_languages, img_scores
 
 @app.get("/token")
 async def get_token():
     token = create_token()
     return {"token": token}
 
-@app.post("/ocrmypdf")
+@app.post("/ocr", response_model=OCRResponse)
 async def ocr_endpoint(
     files: List[UploadFile] = File(...),
-    languages: str = 'pan+eng',
+    languages: Optional[str] = None,
     token_payload: dict = Depends(verify_token)
 ):
-    extracted_text = get_file_text_ocrmypdf(files, languages)
-    cleaned_text = ' '.join(extracted_text.replace('\n', ' ').split())
-    return {"extracted_text": cleaned_text}
+    try:
+        all_text_parts = []
+        all_page_info = []
+        total_pages = 0
+        
+        for file in files:
+            ext = os.path.splitext(file.filename)[1].lower()
+            
+            if ext == '.pdf':
+                file.file.seek(0)
+                pdf_bytes = file.file.read()
+                
+                pdf_text_parts, pdf_page_info, pdf_total_pages = process_pdf_page_by_page(pdf_bytes)
+                
+                all_text_parts.extend(pdf_text_parts)
+                all_page_info.extend(pdf_page_info)
+                total_pages += pdf_total_pages
+                
+            elif ext == '.docx':
+                file.file.seek(0)
+                doc = Document(file.file)
+                doc_text = " ".join(para.text for para in doc.paragraphs if para.text.strip())
+                all_text_parts.append(doc_text)
+                
+                doc_languages, doc_scores = detect_languages(doc_text)
+                page_info = PageProcessingInfo(
+                    page_number=1,
+                    detected_languages=doc_languages,
+                    language_scores={k: round(v, 1) for k, v in doc_scores.items()},
+                    ocr_method="text_extraction",
+                    text_length=len(doc_text.strip())
+                )
+                all_page_info.append(page_info)
+                total_pages += 1
+                
+            elif ext in ['.png', '.jpg', '.jpeg', '.tiff', '.bmp']:
+                file.file.seek(0)
+                img = Image.open(io.BytesIO(file.file.read()))
+                if img.mode != 'RGB':
+                    img = img.convert('RGB')
+                
+                ocr_text, ocr_method, img_languages, img_scores = process_image_file(img)
+                all_text_parts.append(ocr_text)
+                
+                page_info = PageProcessingInfo(
+                    page_number=1,
+                    detected_languages=img_languages,
+                    language_scores={k: round(v, 1) for k, v in img_scores.items()},
+                    ocr_method=ocr_method,
+                    text_length=len(ocr_text.strip())
+                )
+                all_page_info.append(page_info)
+                total_pages += 1
+                
+            else:
+                raise HTTPException(status_code=400, detail=f"Unsupported file type: {ext}")
+        
+        final_text = " ".join(all_text_parts)
+        cleaned_text = preprocess_text(final_text)
+        
+        if cleaned_text:
+            detected_languages, language_scores = detect_languages(cleaned_text)
+        else:
+            detected_languages = ["eng"]
+            language_scores = {"eng": 50.0}
+        
+        if languages:
+            language_used = languages
+        else:
+            language_used = get_ocr_language_string(detected_languages)
+        
+        confidence_score = max(language_scores.values()) if language_scores else 70.0
+        
+        return OCRResponse(
+            extracted_text=cleaned_text,
+            detected_languages=detected_languages,
+            language_used_for_ocr=language_used,
+            confidence_score=round(confidence_score, 1),
+            page_processing_info=all_page_info,
+            total_pages=total_pages
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"OCR processing failed: {str(e)}")
 
-@app.post("/ocr-tesseract")
-async def ocr_tesseract_only(
-    files: List[UploadFile] = File(...),
-    languages: str = 'pan+eng',
-    token_payload: dict = Depends(verify_token)
-):
-    extracted_text = get_file_text_tesseract(files, languages)
-    cleaned_text = ' '.join(extracted_text.replace('\n', ' ').split())
-    return {"extracted_text": cleaned_text}
+
+
+
+
+
+
+
+
+
+
+
+
+
